@@ -1,7 +1,7 @@
 ---
 name: job-discover
 description: Finds job postings and freelance missions that fit the user's profile (CV and criteria read from profile/, whatever their format) by querying the configured sources - job boards, public APIs, careers pages of followed companies -, scores each posting against the profile, writes a dated report and keeps track of postings already seen. Use it whenever the user is looking for jobs, missions or contracts, or wants to know who is hiring, whatever the occupation, period ("today", "this week"), contract type or company, even if they never say "job posting" - and in any language (e.g. "trouve-moi des missions freelance", "des offres CDI cette semaine ?"). Also use it to add a company or a source to watch, or to record that the user applied to or dismissed a posting it found. Not for writing an application, analysing a posting the user already has, or preparing an interview.
-allowed-tools: WebSearch WebFetch Read Write Edit Bash(python3 *)
+allowed-tools: WebSearch WebFetch Read Write Edit AskUserQuestion Bash(python3 *)
 argument-hint: "[optional filter: keyword, period, city, freelance, permanent, company]"
 ---
 
@@ -52,8 +52,8 @@ Then look for `profile/criteria.md`:
 - **Missing (first run)**: read `assets/criteria_template.md`, fill it in from the profile, write
   `profile/criteria.md`, show it and **stop** so the user can validate it. A CV rarely says which contract or
   which companies the person is after; a search on guessed criteria will have to be redone. Mark what you guessed.
-  Below it, list what this search will apply on top of the saved criteria (the request's period, contract, city,
-  keyword...), so the user validates everything at once.
+  Once the user has validated `criteria.md`, carry on to the confirmation of step 2 (table + AskUserQuestion) before
+  searching, like on every other run.
 - **Present**: it is authoritative. If it contradicts the CV, follow `criteria.md`: it is the most recent intent.
 
 Then read the period settings (this also creates the project's `config/` on first use):
@@ -67,8 +67,8 @@ It prints `config/search.json` as JSON: `default_period_days` (period when the r
 resulting start date. These numbers live in the config, not in these instructions: always take them from there.
 **If `confirmed` is false**, this is the first search with these settings: show them to the user in plain words
 ("with no period given, I search the last {default_period_days} days; if I find fewer than {widen_below}
-postings, I widen to the last {widen_to_days} days") together with the criteria (in the first-run message, or
-in the confirmation table of step 2), and ask them to confirm or change them. Once they answer, write their values to
+postings, I widen to the last {widen_to_days} days") in the confirmation table of step 2, validated through the same
+prompt as the criteria. Once they answer, write their values to
 `config/search.json` with `"confirmed": true`. Later, "search 3 days by default" or "widen to a month" → update the
 same file.
 
@@ -99,8 +99,10 @@ same file.
 
 ### Confirm the criteria before every search
 
-Before running anything, show the user the criteria this search will use and **stop** until they answer. Each search
-is its own: the user may want a different period, contract or city today than last week without touching their saved
+Before running anything, show the user the criteria this search will use and **stop** until they answer. This is
+**mandatory on every launch that runs a search**, with no exception: auto mode, scheduled or `/loop` runs, and
+requests such as "go" or "same criteria as usual" all still ask. Auto mode never authorises skipping it, and no search
+(`discover.py`, web searches) runs before the user's answer. Each search is its own: the user may want a different period, contract or city today than last week without touching their saved
 preferences, and a search on criteria they would have changed wastes the run and pollutes the tracker.
 
 Show one short table with the current value of each criterion:
@@ -119,19 +121,24 @@ Show one short table with the current value of each criterion:
 | Period settings | only while `confirmed` is false (step 1) |
 
 Values that come from the request rather than from `criteria.md` (a period, "freelance only", a city) are already
-applied in the table and marked as such, so the user sees exactly what will run. Then ask whether they confirm or want
-to change something; one question, not one per criterion.
+applied in the table and marked as such, so the user sees exactly what will run. Then call **AskUserQuestion** with
+one question (e.g. "Use these criteria for this search?", in the output language), not one per criterion, with these
+options:
 
-- **Confirmed** ("ok", "go", "c'est bon"): search with these values.
-- **Changes** ("add Lyon", "only permanent", "drop the keyword X"): apply them to this search, show the updated table
-  only if the change is large or ambiguous, and ask whether to **save** them to `criteria.md` as new defaults or keep
-  them for this search only. Default to this search only: a one-off "only freelance this week" should not quietly
-  become a permanent preference.
+- **Confirm**: search with these values.
+- **Change for this search only**: the user gives the changes ("add Lyon", "only permanent", "drop the keyword X") in
+  the free-text answer. Apply them to this search; if the change is large or ambiguous, show the updated table and ask
+  again.
+- **Change and save as default**: apply the changes, write them to `criteria.md`, then search.
 
-Skip the confirmation only when it would be redundant: on the first run (the user validated `criteria.md` and this
-search's additions together in step 1: once they answer, search straight away, without a second table), for
-requests that run no search (adding a company or a source, changing saved criteria, updating a tracker status), or
-when the request itself says to use the criteria as they are ("same criteria as usual, go").
+When the user changes something without saying where it should go, keep it for this search only: a one-off "only
+freelance this week" should not quietly become a permanent preference.
+
+If AskUserQuestion is unavailable (non-interactive run), show the table, ask the same question in text and **stop**
+without searching.
+
+The only runs that skip the confirmation are requests that run **no search**: adding a company or a source, changing
+saved criteria, updating a tracker status.
 
 **Followed companies:** once the criteria are confirmed, sync the companies section of `criteria.md` to
 `output/companies.json`. A company added for this search only is not synced (every later search would poll it): cover
