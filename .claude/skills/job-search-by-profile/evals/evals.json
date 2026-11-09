@@ -1,0 +1,30 @@
+{
+  "skill_name": "job-search-by-profile",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Salut ! Cherche des offres d'emploi selon mon CV, s'il te plaît. Mon CV est ici : /home/malek/workspace/job-search/job-search-by-profile-workspace/inputs/cv-julien-moreau.md",
+      "expected_output": "Short profile summary and the first small group of criteria questions, in French. No web search, no HTML report; the agent stops and waits.",
+      "files": [
+        "/home/malek/workspace/job-search/job-search-by-profile-workspace/inputs/cv-julien-moreau.md"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I can't give you web access in this environment, so here are some postings I collected: /home/malek/workspace/job-search/job-search-by-profile-workspace/inputs/postings-pasted.md. My CV: /home/malek/workspace/job-search/job-search-by-profile-workspace/inputs/cv-priya-ramanathan.txt. Criteria: Data Engineer / Senior Data Engineer roles, London or remote UK, permanent only, at least £70k gross per year, posted in the last 30 days, hybrid or remote. Must-have: Python, SQL, Spark, Airflow. Nice-to-have: dbt, AWS, Kafka. Dealbreaker: no on-call rotas. I have full right to work in the UK. Max 20 results. Give me a report of which ones fit.",
+      "expected_output": "Recap shown and confirmation requested before analysis; after simulated 'yes': duplicate Quidly merged, Brightcart (too old) and NorthGrid (on-call) removed, Tessel dropped or Partial/Low; HTML report output/2026-11-09/job-search-results-2026-11-09.html with tier tables, scores, strengths/weaknesses, links; no personal data.",
+      "files": [
+        "/home/malek/workspace/job-search/job-search-by-profile-workspace/inputs/postings-pasted.md",
+        "/home/malek/workspace/job-search/job-search-by-profile-workspace/inputs/cv-priya-ramanathan.txt"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Help me with my job hunt. CV: /home/malek/workspace/job-search/job-search-by-profile-workspace/inputs/cv-lena-vogel.txt. I want Senior/mid Frontend Engineer or React Developer roles, full remote within the EU or hybrid in Berlin, permanent, at least 70k EUR gross/year if stated, posted in the last 30 days, English or German. Must-have: React, TypeScript. Nice-to-have: Next.js, GraphQL, Playwright. No crypto/gambling companies. Return max 10 jobs.",
+      "expected_output": "Recap + confirmation before searching; after simulated 'yes', real web search with varied queries, real posting URLs, HTML report with tiers, blocked boards in footer, 5-line summary.",
+      "files": [
+        "/home/malek/workspace/job-search/job-search-by-profile-workspace/inputs/cv-lena-vogel.txt"
+      ]
+    }
+  ]
+}
